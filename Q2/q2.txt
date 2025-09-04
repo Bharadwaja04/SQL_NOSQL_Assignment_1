@@ -52,6 +52,7 @@ db.temperature.aggregate([
 
 
 db.temperature.aggregate([
+  {$match:{city:"Mumbai"}},
   {$lookup:{
     from:"weather",
     localField:"date",
@@ -62,7 +63,7 @@ db.temperature.aggregate([
     dateObj:{$toDate:"$date"}
   }},
   {$setWindowFields:{
-    partitionBy:"$city",
+    partitionBy:"Mumbai",
     sortBy:{dateObj:1},
     output:{
       avgTemp7day:{

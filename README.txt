@@ -130,17 +130,20 @@ Pass rate calculated across **3 dimensions**:
 
 ---
 
-#### 3. 7-Day Moving Average Trend for a City  
-- Computed rolling averages for multiple weather metrics.  
+#### 3. 7-Day Moving Average Trend for One Given City  
+- Computed rolling averages for multiple weather metrics for a **specific city** (default: Mumbai).  
 
 **Assumptions:**  
+- Query filters data for a single city using `$match: { city: "Mumbai" }`.  
+- To analyze another city, replace `"Mumbai"` with the desired city name in both `$match` and `$setWindowFields.partitionBy`.  
 - Rolling window = **7 days** (`range: [-6,0]`).  
-- Metrics averaged:  
+- Metrics averaged (based on both `temperature` and `weather` collections):  
   - Temperature (`temp.avg_c`)  
-  - Precipitation (`precip_mm`)  
-  - Humidity (`humidity_pct`)  
-  - Wind (`wind_kmph`)  
-  - Cloud cover (`cloud_pct`)  
-- Uses `$setWindowFields` partitioned by city, ordered by date.  
+  - Precipitation (`Weatherdata.precip_mm`)  
+  - Humidity (`Weatherdata.humidity_pct`)  
+  - Wind (`Weatherdata.wind_kmph`)  
+  - Cloud cover (`Weatherdata.cloud_pct`)  
+- Data is ordered by `dateObj` to ensure correct moving average calculation.  
+
 
 ---
