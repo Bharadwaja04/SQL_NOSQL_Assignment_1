@@ -1,0 +1,73 @@
+1. daily average temperature per city by month
+
+
+db.temperature.aggregate([
+   {$group: {
+      _id: {
+        city: "$city",
+        date: { $dateToString: { format: "%Y-%m-%d", date: { $toDate: "$date" } } } },
+      avg_temperature: { $avg: "$temp.avg_c" }
+    }},
+   {$project: {
+      _id: 0,
+      City: "$_id.city",
+      Date: "$_id.date",
+      Avg_Temperature: "$avg_temperature"}},
+   {$sort: { City: 1, Date: 1 } }
+])
+
+2. monthly average temperature per city
+
+
+db.temperature.aggregate([
+  {$group:{
+    _id:{
+      city:"$city",
+      month:{$dateToString:{format:"%Y-%m",date:{$toDate:"$date"}}}
+    },
+    avg_temperature:{$avg:"$temp.avg_c"}
+  }},
+  {$project:{
+    _id:0,
+    City:"$_id.city",
+    Month:"$_id.month",
+    Monthly_Avg_Temperature:"$avg_temperature"
+  }},
+  {$sort:{City:1,Month:1}}
+])
+
+3.Identify hottest and Coldest cities from Overall Jan-Jun 2025
+
+
+db.temperature.aggregate([
+  {$addFields:{
+    dateObj:{$toDate:"$date"}
+  }},
+  {$match:{
+    dateObj:{
+      $gte:ISODate("2025-01-01T00:00:00Z"),
+      $lte:ISODate("2025-06-30T23:59:59Z")
+    }
+  }},
+  {$group:{
+    _id:"$city",
+    avg_temperature:{$avg:"$temp.avg_c"}
+  }},
+  {$sort:{
+    avg_temperature:-1
+  }},
+  {$group:{
+    _id:null,
+    hottestCity:{$first:"$_id"},
+    coldestCity:{$last:"$_id"},
+    hottest_temperature:{$first:"$avg_temperature"},
+    coldest_temperature:{$last:"$avg_temperature"}
+  }},
+  {$project:{
+    _id:0,
+    hottestCity:"$hottestCity",
+    coldestCity:"$coldestCity",
+    hottest_temperature:"$hottest_temperature",
+    coldest_temperature:"$coldest_temperature"
+  }}
+])

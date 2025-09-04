@@ -1,0 +1,101 @@
+1. Identify top 5 hottest and coldest days nation wide
+
+
+db.temperature.aggregate([
+  {$facet:{
+    hottest:[
+      {$project:{_id:0,city:1,dateObj:{$dateToString:{format:"%Y-%m-%d",date:{$toDate:"$date"}}},hottest:"$temp.max_c"}},
+      {$sort:{hottest:-1}},
+      {$limit:5}
+    ],
+    coldest:[
+      {$project:{_id:0,city:1,dateObj:{$dateToString:{format:"%Y-%m-%d",date:{$toDate:"$date"}}},coldest:"$temp.min_c"}},
+      {$sort:{coldest:1}},
+      {$limit:5}
+    ]
+  }}
+])
+
+2.Compare City’s temperature and weather data to determine if it is raining or not on a particular day
+
+
+db.temperature.aggregate([
+  {$lookup:{
+    from:"weather",
+    localField:"date",
+    foreignField:"date",
+    as: "Weatherdata"
+  }},
+  {$unwind:"$Weatherdata"},
+  {$group:{
+    _id:{city:"$city",date:"$Weatherdata.date"},
+    avg_temp:{$avg:"$temp.avg_c"},
+    condition:{$first:"$Weatherdata.condition"}
+  }},
+  {$project:{
+    _id:0,
+    city:"$_id.city",
+    temperature:"$avg_temp",
+    date:"$_id.date",
+    Condition:"$condition",
+    isRaining:{
+      $cond:[
+        {$eq:["$condition", "Rain"]},
+        true,
+        false
+      ]
+    }
+  }}
+])
+
+7-day moving average (trend) for one given city.
+
+
+db.temperature.aggregate([
+  {$lookup:{
+    from:"weather",
+    localField:"date",
+    foreignField:"date",
+    as:"Weatherdata"
+  }},
+  {$addFields:{
+    dateObj:{$toDate:"$date"}
+  }},
+  {$setWindowFields:{
+    partitionBy:"$city",
+    sortBy:{dateObj:1},
+    output:{
+      avgTemp7day:{
+        $avg:"$temp.avg_c",
+        window:{range:[-6,0] , unit: "day"}
+      },
+      avgprecip7day:{
+        $avg:{$first:"$Weatherdata.precip_mm"},
+        window:{range:[-6,0] , unit:"day"}
+      },
+      avghumid7day:{
+        $avg:{$first:"$Weatherdata.humidity_pct"},
+        window:{range:[-6,0] , unit:"day"}
+      },
+      avgwind7day:{
+        $avg:{$first:"$Weatherdata.wind_kmph"},
+        window:{range:[-6,0] , unit:"day"}
+      },
+      avgcloud7day:{
+        $avg:{$first:"$Weatherdata.cloud_pct"},
+        window:{range:[-6,0] , unit:"day"}
+      }
+    }
+  }},
+  {$project:{
+    _id:0,
+    city:1,
+    date:"$date",
+    AvgTemp7Day:"$avgTemp7day",
+    Avgprecip7Day:"$avgprecip7day",
+    AvgHumid7Day:"$avghumid7day",
+    AvgWind7Day:"$avgwind7day",
+    AvgCloud7Day:"$avgcloud7day"
+  }}
+])
+
